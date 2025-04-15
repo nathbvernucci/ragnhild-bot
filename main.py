@@ -17,8 +17,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Bem-vindo à Operação Ragnhild!
-Escolha sua máfia:", reply_markup=reply_markup)
+    await update.message.reply_text("Bem-vindo à Operação Ragnhild! Escolha sua máfia:", reply_markup=reply_markup)
 
 # Escolha de máfia
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
