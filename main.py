@@ -1,9 +1,13 @@
 import os
+import random
 import threading
+from http.server import SimpleHTTPRequestHandler, HTTPServer
+from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import random
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+
+# Carrega variáveis de ambiente
+load_dotenv()
 
 # Dicionário temporário para armazenar status dos jogadores
 jogadores = {}
@@ -60,24 +64,18 @@ def run_http_server():
     print("Servidor HTTP iniciado na porta 8080")
     server.serve_forever()
 
-# Função para rodar o bot em uma thread separada
-async def run_bot():
-    from dotenv import load_dotenv
-    load_dotenv()
+# Função para rodar o bot de forma síncrona
+def run_bot_sync():
     token = os.getenv("BOT_TOKEN")
     app = Application.builder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
-    
-    # Agora usamos o 'await' para o polling funcionar
-    await app.run_polling()
+    print("Bot rodando...")
+    app.run_polling()
 
-def run_http_server_thread():
-    threading.Thread(target=run_http_server).start()
-
+# Início do programa
 if __name__ == '__main__':
     threading.Thread(target=run_http_server).start()
-    import asyncio
-    asyncio.run(run_bot())
+    run_bot_sync()
