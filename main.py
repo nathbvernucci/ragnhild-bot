@@ -45,10 +45,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in jogadores:
         info = jogadores[user_id]
         resposta = (
-           f"MÁFIA: {info['mafia'].upper().replace('_', ' ')}"
-
-            f"VIDA: {info['vida']}"
-        resposta = (
+            f"MÁFIA: {info['mafia'].upper().replace('_', ' ')}\n"
             f"VIDA: {info['vida']}\n"
             f"FORÇA: {info['força']}"
         )
