@@ -1,8 +1,9 @@
-
 import os
+import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 import random
+from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 # Dicionário temporário para armazenar status dos jogadores
 jogadores = {}
@@ -53,7 +54,14 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resposta = "Você ainda não escolheu uma máfia. Use /start para começar."
     await update.message.reply_text(resposta)
 
-if __name__ == '__main__':
+# Função para rodar o servidor HTTP simples
+def run_http_server():
+    server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
+    print("Servidor HTTP iniciado na porta 8080")
+    server.serve_forever()
+
+# Função para rodar o bot em uma thread separada
+def run_bot():
     from dotenv import load_dotenv
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
@@ -64,3 +72,8 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("status", status))
     print("Bot rodando...")
     app.run_polling()
+
+if __name__ == '__main__':
+    # Rodar o bot e o servidor HTTP em threads separadas
+    threading.Thread(target=run_bot).start()
+    threading.Thread(target=run_http_server).start()
