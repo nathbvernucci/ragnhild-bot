@@ -170,12 +170,11 @@ async def main():
     app.add_handler(CommandHandler("sala_vip", sala_vip))
     app.add_handler(CommandHandler("cofre", cofre))
 
-    # Rodar o bot e o servidor juntos
+    # Rodar o bot e o servidor juntos sem criar um novo loop
     from threading import Thread
     Thread(target=run_web_server).start()
     await app.run_polling()
 
 # Executa o bot
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()  # Remover o asyncio.run e chamando diretamente a função main()
