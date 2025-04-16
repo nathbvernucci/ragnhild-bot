@@ -174,12 +174,8 @@ async def main():
     app.add_handler(CallbackQueryHandler(abrir_cofre, pattern='abrir_cofre'))
     app.add_handler(CommandHandler("pontuacao", pontuacao))
 
-    await app.initialize()
-    await app.start()
-    print("Bot rodando!")
-    await app.updater.start_polling()
-    await app.updater.idle()
-
+    await app.run_polling()
+    
 # Iniciar servidor HTTP e bot
 if __name__ == "__main__":
     threading.Thread(target=run_http_server).start()
