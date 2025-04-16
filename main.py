@@ -177,6 +177,7 @@ async def main():
     await app.run_polling()
     
 # Iniciar servidor HTTP e bot
-if __name__ == "__main__":
-    threading.Thread(target=run_http_server).start()
-    asyncio.run(main())
+if __name__ == '__main__':
+    import nest_asyncio
+    nest_asyncio.apply()
+    asyncio.get_event_loop().run_until_complete(main())
