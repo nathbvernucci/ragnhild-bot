@@ -1,8 +1,10 @@
 import os
+import threading
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 import random
-from dotenv import load_dotenv
+from http.server import SimpleHTTPRequestHandler, HTTPServer
+import asyncio
 
 # Dicionário temporário para armazenar status dos jogadores
 jogadores = {}
@@ -11,9 +13,9 @@ jogadores = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
-            InlineKeyboardButton("Entrar na Outfit", callback_data='Outfit'),
-            InlineKeyboardButton("Entrar na Camorra", callback_data='Camorra'),
-            InlineKeyboardButton("Entrar na Famiglia", callback_data='Famiglia'),
+            InlineKeyboardButton("Entrar na Outfit", callback_data='outfit'),
+            InlineKeyboardButton("Entrar na Camorra", callback_data='camorra'),
+            InlineKeyboardButton("Entrar na Famiglia", callback_data='famiglia'),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -26,7 +28,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     choice = query.data
     jogadores[user_id] = {"mafia": choice, "vida": 100, "força": random.randint(5, 20)}
-    await query.edit_message_text(text=f"Você entrou na {choice.upper()}.")
+    await query.edit_message_text(text=f"Você entrou na {choice.upper().replace('_', ' ')}.")
 
 # Comando /rolar
 async def rolar(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -45,7 +47,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in jogadores:
         info = jogadores[user_id]
         resposta = (
-            f"MÁFIA: {info['mafia'].upper()}\n"
+            f"MÁFIA: {info['mafia'].upper().replace('_', ' ')}\n"
             f"VIDA: {info['vida']}\n"
             f"FORÇA: {info['força']}"
         )
@@ -53,8 +55,15 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resposta = "Você ainda não escolheu uma máfia. Use /start para começar."
     await update.message.reply_text(resposta)
 
-# Função para rodar o bot em Render (sem servidor HTTP)
+# Função para rodar o servidor HTTP simples
+def run_http_server():
+    server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
+    print("Servidor HTTP iniciado na porta 8080")
+    server.serve_forever()
+
+# Função para rodar o bot em uma thread separada
 async def run_bot():
+    from dotenv import load_dotenv
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
     app = Application.builder().token(token).build()
@@ -63,8 +72,15 @@ async def run_bot():
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
     
+    # Agora usamos o 'await' para o polling funcionar
     await app.run_polling()
 
+def run_http_server_thread():
+    threading.Thread(target=run_http_server).start()
+
 if __name__ == '__main__':
-    import asyncio
+    # Iniciar o servidor HTTP
+    threading.Thread(target=run_http_server).start()
+    
+    # Rodar o bot de maneira assíncrona
     asyncio.run(run_bot())
