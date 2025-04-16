@@ -70,13 +70,17 @@ def run_bot():
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
+    import threading
+
+def run_bot():
     print("Bot rodando...")
     app.run_polling()
+
+def run_http_server():
+    # Código para rodar o servidor HTTP
+    pass
 
 if __name__ == '__main__':
     # Rodar o bot e o servidor HTTP em threads separadas
     threading.Thread(target=run_bot).start()
     threading.Thread(target=run_http_server).start()
-    if __name__ == "__main__":
-    print("Bot rodando...")
-    app.run_polling()
