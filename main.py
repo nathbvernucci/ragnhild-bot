@@ -78,6 +78,6 @@ def run_http_server_thread():
     threading.Thread(target=run_http_server).start()
 
 if __name__ == '__main__':
-    # Rodar o bot e o servidor HTTP em threads separadas
-    threading.Thread(target=run_bot).start()
-    run_http_server_thread()
+    threading.Thread(target=run_http_server).start()
+    import asyncio
+    asyncio.run(run_bot())
