@@ -1,6 +1,5 @@
 import os
 import random
-import asyncio
 import logging
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from dotenv import load_dotenv
@@ -200,18 +199,4 @@ async def main():
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("cargo", cargo))
-    app.add_handler(CallbackQueryHandler(definir_cargo, pattern='^(Infiltrador|Atirador|Negociador|Líder Tático)$'))
-    app.add_handler(CommandHandler("sala_vip", sala_vip))
-    app.add_handler(CallbackQueryHandler(entrar_vip, pattern='entrar_vip'))
-    app.add_handler(CommandHandler("cofre", cofre))
-    app.add_handler(CallbackQueryHandler(abrir_cofre, pattern='abrir_cofre'))
-    app.add_handler(CommandHandler("pontuacao", pontuacao))
-    app.add_handler(CommandHandler("final", final))
-
-    await app.run_polling()
-
-# === Execução Final ===
-if __name__ == "__main__":
-    import threading
-    threading.Thread(target=run_web_server, daemon=True).start()
-    asyncio.run(main())
+    app.add_handler(CallbackQueryHandler(definir_cargo, pattern='^(Infiltrador|Atirador|Negociador|Líder T
