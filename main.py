@@ -28,8 +28,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         InlineKeyboardButton("Entrar na Camorra", callback_data='Camorra'),
         InlineKeyboardButton("Entrar na Famiglia", callback_data='Famiglia'),
     ]]
-    await update.message.reply_text("Bem-vindo à Operação Ragnhild! Escolha sua máfia:",
-                                    reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(
+        "Bem-vindo à Operação Ragnhild! A tensão está no ar. Escolha sua máfia e comece a jornada.",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 # Escolha de máfia
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -38,7 +40,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     choice = query.data
     jogadores[user_id] = {"mafia": choice, "vida": 100, "força": random.randint(5, 20), "cargo": None}
-    await query.edit_message_text(text=f"Você entrou na {choice.upper()}.")
+    await query.edit_message_text(
+        text=f"Você escolheu a {choice.upper()}... a partir de agora, você fará parte dessa família implacável."
+    )
 
 # Comando /rolar
 async def rolar(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -77,7 +81,10 @@ async def cargo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Você já escolheu o cargo: {jogador['cargo']}")
         return
     keyboard = [[InlineKeyboardButton(c, callback_data=c)] for c in cargos]
-    await update.message.reply_text("Escolha seu cargo:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(
+        "Escolha seu cargo e se prepare para a missão. O futuro da sua máfia está em suas mãos!",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 async def definir_cargo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -86,16 +93,22 @@ async def definir_cargo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cargo = query.data
     if user_id in jogadores:
         jogadores[user_id]['cargo'] = cargo
-        await query.edit_message_text(text=f"Você agora é um {cargo} na máfia {jogadores[user_id]['mafia']}.")
+        await query.edit_message_text(
+            text=f"Você agora é um {cargo} na máfia {jogadores[user_id]['mafia']}... a responsabilidade é sua!"
+        )
     else:
         await query.edit_message_text(text="Você precisa escolher uma máfia primeiro!")
 
+# Comando para acessar a Sala VIP
 async def sala_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in jogadores:
         await update.message.reply_text("Você precisa escolher uma máfia antes de acessar a sala VIP!")
         return
-    descricao = "Você está na sala VIP. Seu objetivo é reunir informações importantes, mas a segurança está forte. Escolha sabiamente!"
+    descricao = (
+        "A sala VIP está protegida por seguranças armados. Mas há informações valiosas lá dentro."
+        "\nVocê pode tentar entrar, mas as consequências podem ser graves..."
+    )
     keyboard = [[InlineKeyboardButton("Tentar acessar a sala VIP", callback_data='entrar_vip')]]
     await update.message.reply_text(descricao, reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -112,18 +125,26 @@ async def entrar_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if resultado > 15:
         pontos = random.randint(5, 15)
         pontuacoes[mafia] += pontos
-        await query.edit_message_text(f"Sucesso! Você conseguiu acessar a sala VIP e ganhou {pontos} pontos para a {mafia.upper()}.")
+        await query.edit_message_text(
+            f"Sucesso! Você conseguiu acessar a sala VIP e obteve informações cruciais. A {mafia.upper()} ganhou {pontos} pontos."
+        )
     else:
         jogador['vida'] -= 10
         pontuacoes[mafia] -= 5
-        await query.edit_message_text(f"Você falhou e perdeu 10 de vida. A {mafia.upper()} perdeu 5 pontos.")
+        await query.edit_message_text(
+            f"Falha! Você foi detectado pelos seguranças e sofreu 10 de dano. A {mafia.upper()} perdeu 5 pontos."
+        )
 
+# Comando para acessar o Cofre
 async def cofre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id not in jogadores:
         await update.message.reply_text("Você precisa escolher uma máfia antes de acessar o cofre!")
         return
-    descricao = "Você está na sala do cofre. O objetivo é acessar o cofre e pegar o loot. A segurança está alta. Você precisa da chave certa!"
+    descricao = (
+        "Você chegou à sala do cofre, onde o loot está guardado. A segurança está intensa e o tempo está correndo."
+        "\nVocê deve escolher sua ação com sabedoria!"
+    )
     keyboard = [[InlineKeyboardButton("Tentar abrir o cofre", callback_data='abrir_cofre')]]
     await update.message.reply_text(descricao, reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -140,12 +161,17 @@ async def abrir_cofre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if resultado > 15:
         loot = random.randint(10, 50)
         pontuacoes[mafia] += loot
-        await query.edit_message_text(f"Sucesso! Você roubou {loot} pontos! A {mafia.upper()} está mais rica.")
+        await query.edit_message_text(
+            f"Sucesso! Você conseguiu abrir o cofre e pegou {loot} pontos. A {mafia.upper()} está mais rica!"
+        )
     else:
         jogador['vida'] -= 15
         pontuacoes[mafia] -= 10
-        await query.edit_message_text(f"Falha! Você perdeu 15 de vida. A {mafia.upper()} perdeu 10 pontos.")
+        await query.edit_message_text(
+            f"Falha! A segurança disparou o alarme e você perdeu 15 de vida. A {mafia.upper()} perdeu 10 pontos."
+        )
 
+# Comando de pontuação
 async def pontuacao(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = "\n".join([f"{mafia}: {pontos}" for mafia, pontos in pontuacoes.items()])
     await update.message.reply_text(f"Pontuação atual das máfias:\n{texto}")
