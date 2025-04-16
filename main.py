@@ -181,9 +181,11 @@ async def final(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Rodar servidor web básico para manter Render ativo
 def run_web_server():
-    server = HTTPServer(("0.0.0.0", 8080), SimpleHTTPRequestHandler)
+    port = int(os.environ.get("PORT", 10000))  # Usa a porta que o Render libera
+    server = HTTPServer(("0.0.0.0", port), SimpleHTTPRequestHandler)
+    print(f"Servidor web rodando na porta {port}")
     server.serve_forever()
-
+    
 # Inicializa o bot
 async def main():
     load_dotenv()
