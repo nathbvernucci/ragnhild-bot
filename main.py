@@ -1,7 +1,6 @@
 import os
 import random
 import asyncio
-import threading
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -186,3 +185,23 @@ async def main():
     app.add_handler(CallbackQueryHandler(definir_cargo, pattern='^[A-Za-z ]+$'))
     app.add_handler(CommandHandler("sala_vip", sala_vip))
     app.add_handler(CallbackQueryHandler(entrar_vip, pattern='entrar'))
+    app.add_handler(CommandHandler("cofre", cofre))
+    app.add_handler(CallbackQueryHandler(abrir_cofre, pattern='abrir_cofre'))
+    app.add_handler(CommandHandler("pontuacao", pontuacao))
+
+    # Inicia o bot
+    await app.run_polling()
+
+# Servidor Web
+def run_web_server():
+    server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+# Rodando ambos: bot e servidor web
+async def run():
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())
+    run_web_server()
+
+if __name__ == '__main__':
+    asyncio.run(run())
