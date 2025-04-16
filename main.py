@@ -201,4 +201,14 @@ async def main():
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("cargo", cargo))
-    app.add_handler(CallbackQueryHandler(definir_cargo, pattern='^(Infiltrador|Atirador|Negociador|Líder Tático)$'))
+app.add_handler(CallbackQueryHandler(definir_cargo, pattern='^(Infiltrador|Atirador|Negociador|Líder Tático)$'))
+    
+    if __name__ == '__main__':
+    import asyncio
+    import threading
+
+    # Roda o servidor web em uma thread separada
+    threading.Thread(target=run_web_server, daemon=True).start()
+
+    # Roda o bot principal
+    asyncio.run(main())
