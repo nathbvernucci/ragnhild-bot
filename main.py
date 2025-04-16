@@ -47,7 +47,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resposta = (
            f"MÁFIA: {info['mafia'].upper().replace('_', ' ')}"
 
-            f"VIDA: {info['vida']}
+            f"VIDA: {info['vida']}"
 "
             f"FORÇA: {info['força']}"
         )
