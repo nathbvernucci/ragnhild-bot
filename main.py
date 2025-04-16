@@ -211,4 +211,6 @@ if __name__ == "__main__":
     threading.Thread(target=run_http_server).start()
 
     import asyncio
-    asyncio.run(run_bot())
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
+    loop.run_forever()
