@@ -1,13 +1,8 @@
 import os
-import random
-import threading
-from http.server import SimpleHTTPRequestHandler, HTTPServer
-from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-
-# Carrega variáveis de ambiente
-load_dotenv()
+import random
+from dotenv import load_dotenv
 
 # Dicionário temporário para armazenar status dos jogadores
 jogadores = {}
@@ -16,9 +11,9 @@ jogadores = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
-            InlineKeyboardButton("Entrar na Máfia A", callback_data='mafia_a'),
-            InlineKeyboardButton("Entrar na Máfia B", callback_data='mafia_b'),
-            InlineKeyboardButton("Entrar na Máfia C", callback_data='mafia_c'),
+            InlineKeyboardButton("Entrar na Outfit", callback_data='Outfit'),
+            InlineKeyboardButton("Entrar na Camorra", callback_data='Camorra'),
+            InlineKeyboardButton("Entrar na Famiglia", callback_data='Famiglia'),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -31,7 +26,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     choice = query.data
     jogadores[user_id] = {"mafia": choice, "vida": 100, "força": random.randint(5, 20)}
-    await query.edit_message_text(text=f"Você entrou na {choice.upper().replace('_', ' ')}.")
+    await query.edit_message_text(text=f"Você entrou na {choice.upper()}.")
 
 # Comando /rolar
 async def rolar(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -50,7 +45,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id in jogadores:
         info = jogadores[user_id]
         resposta = (
-            f"MÁFIA: {info['mafia'].upper().replace('_', ' ')}\n"
+            f"MÁFIA: {info['mafia'].upper()}\n"
             f"VIDA: {info['vida']}\n"
             f"FORÇA: {info['força']}"
         )
@@ -58,24 +53,18 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resposta = "Você ainda não escolheu uma máfia. Use /start para começar."
     await update.message.reply_text(resposta)
 
-# Função para rodar o servidor HTTP simples
-def run_http_server():
-    server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
-    print("Servidor HTTP iniciado na porta 8080")
-    server.serve_forever()
-
-# Função para rodar o bot de forma síncrona
-def run_bot_sync():
+# Função para rodar o bot em Render (sem servidor HTTP)
+async def run_bot():
+    load_dotenv()
     token = os.getenv("BOT_TOKEN")
     app = Application.builder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
-    print("Bot rodando...")
-    app.run_polling()
+    
+    await app.run_polling()
 
-# Início do programa
 if __name__ == '__main__':
-    threading.Thread(target=run_http_server).start()
-    run_bot_sync()
+    import asyncio
+    asyncio.run(run_bot())
