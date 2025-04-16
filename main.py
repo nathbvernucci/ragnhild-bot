@@ -218,11 +218,12 @@ def run_web_server():
     server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
     server.serve_forever()
 
-# Rodando ambos: bot e servidor web
+# Rodando o servidor web em uma thread separada e o bot normalmente
 async def run():
-    loop = asyncio.get_event_loop()
-    loop.create_task(main())
-    run_web_server()
+    await main()
 
 if __name__ == '__main__':
+    import threading
+    threading.Thread(target=run_web_server, daemon=True).start()
     asyncio.run(run())
+    
