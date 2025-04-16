@@ -1,6 +1,7 @@
 import os
 import random
 import asyncio
+import threading
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -8,7 +9,7 @@ from telegram.ext import (
 )
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-# Dicionário temporário para armazenar status dos jogadores
+# Dados do jogo
 jogadores = {}
 pontuacoes = {"Outfit": 0, "Camorra": 0, "Famiglia": 0}
 cargos = ["Infiltrador", "Atirador", "Negociador", "Líder Tático"]
@@ -80,6 +81,7 @@ async def cargo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+# Definir cargo via botão
 async def definir_cargo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -106,6 +108,7 @@ async def sala_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("Tentar entrar na sala VIP", callback_data='entrar_vip')]]
     await update.message.reply_text(descricao, reply_markup=InlineKeyboardMarkup(keyboard))
 
+# Tentar entrar na sala VIP
 async def entrar_vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -138,6 +141,7 @@ async def cofre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[InlineKeyboardButton("Tentar abrir o cofre", callback_data='abrir_cofre')]]
     await update.message.reply_text(descricao, reply_markup=InlineKeyboardMarkup(keyboard))
 
+# Tentar abrir o cofre
 async def abrir_cofre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -158,7 +162,7 @@ async def abrir_cofre(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Alarme disparado! Você perdeu 15 de vida. A {mafia.upper()} perdeu 10 pontos."
         )
 
-# Pontuação atual
+# Pontuação
 async def pontuacao(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = "\n".join([f"{mafia}: {pontos}" for mafia, pontos in pontuacoes.items()])
     await update.message.reply_text(f"Pontuação atual das máfias:\n\n{texto}")
@@ -192,7 +196,12 @@ async def final(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_text(texto)
 
-# Função principal para iniciar o bot
+# Função para rodar o servidor web
+def run_web_server():
+    server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+# Função principal do bot
 async def main():
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
@@ -213,17 +222,7 @@ async def main():
 
     await app.run_polling()
 
-# Servidor Web
-def run_web_server():
-    server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
-    server.serve_forever()
-
-# Rodando o servidor web em uma thread separada e o bot normalmente
-async def run():
-    await main()
-
+# Execução do bot e servidor web
 if __name__ == '__main__':
-    import threading
     threading.Thread(target=run_web_server, daemon=True).start()
-    asyncio.run(run())
-    
+    asyncio.run(main())
