@@ -1,151 +1,118 @@
+import logging
 import os
-import asyncio
 import random
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application,
+    ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
-    MessageHandler,
     ContextTypes,
-    filters,
 )
 
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
+
+# Setup de logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Dicionários globais
+mafia_nomes = {
+    "outfit": "Outfit",
+    "camorra": "Camorra",
+    "famiglia": "Famiglia"
+}
+
+pontos_mafias = {
+    "Outfit": {"vida": 0, "forca": 0},
+    "Camorra": {"vida": 0, "forca": 0},
+    "Famiglia": {"vida": 0, "forca": 0},
+}
 
 jogadores = {}
-fichas = {}
-pontuacoes = {"Outfit": 0, "Camorra": 0, "Famiglia": 0}
 
-cargos = [
-    "Capo", "Consigliere", "Underboss", "Médico(a)", "Interrogador(a)",
-    "Traficante", "Atirador(a)", "Estrategista", "Hacker", "Executor", "Soldado"
-]
+# Ações especiais por habilidade
+habilidades_especiais = ["furtividade", "blefe", "suborno"]
 
 # Comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("Entrar na Outfit", callback_data='Outfit')],
-        [InlineKeyboardButton("Entrar na Camorra", callback_data='Camorra')],
-        [InlineKeyboardButton("Entrar na Famiglia", callback_data='Famiglia')],
+        [InlineKeyboardButton("Outfit", callback_data="escolha_outfit")],
+        [InlineKeyboardButton("Camorra", callback_data="escolha_camorra")],
+        [InlineKeyboardButton("Famiglia", callback_data="escolha_famiglia")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("Escolha sua máfia:", reply_markup=reply_markup)
 
-# Botão de escolha de máfia
-async def escolher_mafia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Callback de escolha de máfia
+async def escolha_mafia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    user_id = query.from_user.id
-    escolha = query.data
-    jogadores[user_id] = {"mafia": escolha, "vida": 100, "força": random.randint(5, 20)}
-    await query.edit_message_text(f"Você entrou na máfia {escolha}.\nUse /ficha para montar sua ficha.")
+    escolha = query.data.split("_")[1]
+    user = query.from_user
 
-# Comando /ficha
-async def ficha(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id not in jogadores:
-        await update.message.reply_text("Use /start para escolher sua máfia primeiro.")
-        return
-    fichas[user_id] = {"passo": "nome"}
-    await update.message.reply_text("Digite o **nome do seu personagem**:")
+    maf = mafia_nomes.get(escolha, "Outfit")
+    jogadores[user.id] = {
+        "nome": user.first_name,
+        "mafia": maf,
+        "vida": random.randint(70, 100),
+        "forca": random.randint(30, 70),
+        "agilidade": random.randint(20, 50),
+        "habilidade": random.choice(habilidades_especiais)
+    }
 
-# Coletar informações da ficha
-async def coletar_ficha(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id not in fichas:
-        return
-
-    ficha = fichas[user_id]
-    texto = update.message.text
-
-    if ficha["passo"] == "nome":
-        ficha["nome"] = texto
-        ficha["passo"] = "cargo"
-        cargos_str = ", ".join(cargos)
-        await update.message.reply_text(f"Escolha o **cargo na máfia** entre:\n{cargos_str}")
-    elif ficha["passo"] == "cargo":
-        if texto not in cargos:
-            await update.message.reply_text("Cargo inválido. Escolha novamente.")
-            return
-        ficha["cargo"] = texto
-        ficha["passo"] = "habilidade"
-        await update.message.reply_text("Descreva a **habilidade especial** do seu personagem:")
-    elif ficha["passo"] == "habilidade":
-        ficha["habilidade"] = texto
-        ficha["passo"] = None
-        await update.message.reply_text("Ficha concluída!\nUse /status para ver seus dados.")
-    fichas[user_id] = ficha
+    await query.edit_message_text(text=f"Você entrou na máfia *{maf}*!",
+                                  parse_mode="Markdown")
 
 # Comando /status
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id in jogadores:
-        info = jogadores[user_id]
-        ficha = fichas.get(user_id, {})
-        resposta = (
-            f"MÁFIA: {info['mafia']}\n"
-            f"VIDA: {info['vida']}\n"
-            f"FORÇA: {info['força']}\n"
-            f"NOME: {ficha.get('nome', '—')}\n"
-            f"CARGO: {ficha.get('cargo', '—')}\n"
-            f"HABILIDADE: {ficha.get('habilidade', '—')}"
-        )
-        await update.message.reply_text(resposta)
-    else:
-        await update.message.reply_text("Você ainda não escolheu uma máfia. Use /start.")
+    status_text = "Pontuação atual por máfia:\n\n"
+    for nome, pontos in pontos_mafias.items():
+        status_text += f"*{nome}* - Vida: {pontos['vida']}, Força: {pontos['forca']}\n"
+    await update.message.reply_text(status_text, parse_mode="Markdown")
 
-# Comando /rolar 1d20
+# Comando /rolar
 async def rolar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        arg = context.args[0]
-        qtd, dado = map(int, arg.lower().split('d'))
-        resultados = [random.randint(1, dado) for _ in range(qtd)]
-        total = sum(resultados)
-        await update.message.reply_text(f"Resultados: {resultados} | Total: {total}")
-    except:
-        await update.message.reply_text("Uso correto: /rolar 1d20")
+    user = update.message.from_user
+    if user.id not in jogadores:
+        await update.message.reply_text("Você precisa escolher uma máfia primeiro com /start.")
+        return
 
-# Comando /vip
-async def vip(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Você entra na sala VIP. O som abafado da música clássica contrasta com o brilho das joias e armas escondidas.\n"
-        "O embaixador sorri ao te ver se aproximar.\n\n"
-        "Escolha:\n1 - Se aproximar com charme\n2 - Subornar os seguranças\n3 - Ameaçar discretamente"
+    resultado = random.randint(1, 20)
+    await update.message.reply_text(f"{user.first_name} rolou um dado e tirou: *{resultado}*",
+                                    parse_mode="Markdown")
+
+# Comando /ficha
+async def ficha(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.message.from_user
+    if user.id not in jogadores:
+        await update.message.reply_text("Você ainda não criou sua ficha. Use /start.")
+        return
+
+    f = jogadores[user.id]
+    texto = (
+        f"Ficha de *{f['nome']}*\n"
+        f"Máfia: *{f['mafia']}*\n"
+        f"Vida: {f['vida']}\n"
+        f"Força: {f['forca']}\n"
+        f"Agilidade: {f['agilidade']}\n"
+        f"Habilidade Especial: *{f['habilidade']}*"
     )
+    await update.message.reply_text(texto, parse_mode="Markdown")
 
-# Comando /cofre
-async def cofre(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Você alcança a porta do cofre. O painel eletrônico exige precisão.\n\n"
-        "Escolha:\n1 - Hackear o painel\n2 - Explodir com C4\n3 - Usar a chave roubada do diretor"
-    )
+# Inicialização do bot
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
 
-# Comando /pontuacao
-async def pontuacao(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto = "\n".join([f"{mafia}: {pontos}" for mafia, pontos in pontuacoes.items()])
-    await update.message.reply_text(f"Pontuação atual:\n{texto}")
-
-# Função principal
-async def main():
-    app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(escolher_mafia))
-    app.add_handler(CommandHandler("ficha", ficha))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, coletar_ficha))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("rolar", rolar))
-    app.add_handler(CommandHandler("vip", vip))
-    app.add_handler(CommandHandler("cofre", cofre))
-    app.add_handler(CommandHandler("pontuacao", pontuacao))
-    print("Bot rodando... aguardando comandos.")
-    await app.run_polling()
+    app.add_handler(CommandHandler("ficha", ficha))
+    app.add_handler(CallbackQueryHandler(escolha_mafia, pattern="^escolha_"))
 
-import asyncio
+    logger.info("Bot está rodando...")
+    app.run_polling()
 
-if __name__ == '__main__':
-    import nest_asyncio
-    nest_asyncio.apply()
-    asyncio.get_event_loop().run_until_complete(main())
+if __name__ == "__main__":
+    main()
