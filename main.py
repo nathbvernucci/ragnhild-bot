@@ -1,12 +1,17 @@
 import os
-import threading
 import random
-from http.server import SimpleHTTPRequestHandler, HTTPServer
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import threading
 from dotenv import load_dotenv
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
+from http.server import SimpleHTTPRequestHandler, HTTPServer
 
-# Dicionário temporário de jogadores
+# Dicionário temporário para armazenar status dos jogadores
 jogadores = {}
 
 # Comando /start
@@ -23,6 +28,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Escolha de máfia
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("Botão clicado!")  # DEBUG: isso deve aparecer no log ao clicar
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
@@ -55,14 +61,14 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resposta = "Você ainda não escolheu uma máfia. Use /start para começar."
     await update.message.reply_text(resposta)
 
-# Servidor HTTP simples
+# Função para rodar o servidor HTTP
 def run_http_server():
     server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
     print("Servidor HTTP iniciado na porta 8080")
     server.serve_forever()
 
-# Bot do Telegram
-def run_bot():
+# Função para rodar o bot
+async def run_bot():
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
     app = Application.builder().token(token).build()
@@ -73,9 +79,14 @@ def run_bot():
     app.add_handler(CommandHandler("status", status))
 
     print("Bot rodando...")
-    app.run_polling()
+    await app.run_polling()
 
-# Iniciar tudo
+# Thread para rodar o bot com asyncio
+def start_bot_thread():
+    import asyncio
+    asyncio.run(run_bot())
+
+# Rodar tudo
 if __name__ == '__main__':
-    threading.Thread(target=run_bot).start()
+    threading.Thread(target=start_bot_thread).start()
     threading.Thread(target=run_http_server).start()
