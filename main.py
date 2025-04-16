@@ -1,14 +1,8 @@
 import os
-import random
 import threading
-from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-)
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import random
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 
 # Dicionário temporário para armazenar status dos jogadores
@@ -28,7 +22,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Escolha de máfia
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Botão clicado!")  # DEBUG: isso deve aparecer no log ao clicar
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
@@ -61,32 +54,30 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         resposta = "Você ainda não escolheu uma máfia. Use /start para começar."
     await update.message.reply_text(resposta)
 
-# Função para rodar o servidor HTTP
+# Função para rodar o servidor HTTP simples
 def run_http_server():
     server = HTTPServer(('0.0.0.0', 8080), SimpleHTTPRequestHandler)
     print("Servidor HTTP iniciado na porta 8080")
     server.serve_forever()
 
-# Função para rodar o bot
+# Função para rodar o bot em uma thread separada
 async def run_bot():
+    from dotenv import load_dotenv
     load_dotenv()
     token = os.getenv("BOT_TOKEN")
     app = Application.builder().token(token).build()
-
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button))
     app.add_handler(CommandHandler("rolar", rolar))
     app.add_handler(CommandHandler("status", status))
-
-    print("Bot rodando...")
+    
+    # Agora usamos o 'await' para o polling funcionar
     await app.run_polling()
 
-# Thread para rodar o bot com asyncio
-def start_bot_thread():
-    import asyncio
-    asyncio.run(run_bot())
-
-# Rodar tudo
-if __name__ == '__main__':
-    threading.Thread(target=start_bot_thread).start()
+def run_http_server_thread():
     threading.Thread(target=run_http_server).start()
+
+if __name__ == '__main__':
+    # Rodar o bot e o servidor HTTP em threads separadas
+    threading.Thread(target=run_bot).start()
+    run_http_server_thread()
